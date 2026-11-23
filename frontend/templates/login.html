@@ -1,0 +1,40 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SMARTLOGIX | Cold-Chain Login</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body class="login-body">
+  <div class="login-card">
+    <div class="brand-badge">FOG + DIGITAL TWIN COLD-CHAIN</div>
+    <h1>SMART<span>LOGIX</span></h1>
+    <p class="subtitle">Intelligent Pharmaceutical &amp; Medicine Logistics Platform</p>
+    {% if error %}
+    <div class="alert-banner danger">{{ error }}</div>
+    {% endif %}
+    <form method="POST" action="/login" class="login-form">
+      <label>Username</label>
+      <input type="text" name="username" id="username" placeholder="admin / team / faculty" required />
+      <label>Password</label>
+      <input type="password" name="password" id="password" placeholder="Enter password" required />
+      <button type="submit" class="btn-primary full-width">Sign In to Command Center</button>
+    </form>
+    <div class="demo-creds">
+      <p><strong>Quick Role Access (Click to Fill):</strong></p>
+      <div class="cred-chips">
+        <button type="button" onclick="fillCreds('admin','Admin@123')">Admin (Full)</button>
+        <button type="button" onclick="fillCreds('team','Team@123')">Team (Ops)</button>
+        <button type="button" onclick="fillCreds('faculty','Faculty@123')">Faculty (Read-Only)</button>
+      </div>
+    </div>
+  </div>
+  <script>
+    function fillCreds(u, p) {
+      document.getElementById("username").value = u;
+      document.getElementById("password").value = p;
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,225 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SMARTLOGIX | Smart Medicine Cold-Chain Command Center</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="/static/css/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body data-role="{{ user.role }}">
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h2>SMART<span>LOGIX</span></h2>
+        <span class="tag">COLD-CHAIN + FOG + TWIN</span>
+      </div>
+      <nav class="nav-links">
+        <button class="nav-btn active" onclick="showSection('overview', this)">1. Overview</button>
+        <button class="nav-btn" onclick="showSection('shipments', this)">2. Medicine Shipments</button>
+        <button class="nav-btn" onclick="showSection('twin', this)">3. BenchTwin Digital Twin</button>
+        <button class="nav-btn" onclick="showSection('fog', this)">4. Fog Computing Nodes</button>
+        <button class="nav-btn" onclick="showSection('coldchain', this)">5. Cold-Chain Monitor</button>
+        <button class="nav-btn" onclick="showSection('vehicles', this)">6. Vehicle Management</button>
+        <button class="nav-btn" onclick="showSection('routes', this)">7. Route Optimization</button>
+        <button class="nav-btn" onclick="showSection('alerts', this)">8. Alerts &amp; Notifications</button>
+        <button class="nav-btn" onclick="showSection('analytics', this)">9. Analytics</button>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="user-pill">
+          <strong>{{ user.full_name }}</strong>
+          <small>Role: {{ user.role | upper }}</small>
+        </div>
+        <a href="/logout" class="btn-outline">Logout</a>
+      </div>
+    </aside>
+
+    <main class="main-area">
+      <header class="topbar">
+        <div>
+          <h1 id="page-title">Command Center Overview</h1>
+          <p class="muted">Real-time Pharmaceutical Cold-Chain SLA (2.0&deg;C &ndash; 8.0&deg;C)</p>
+        </div>
+        <div class="live-status">
+          <span class="pulse-dot"></span>
+          <span id="sync-status">Live Sync Active</span>
+        </div>
+      </header>
+
+      <section id="sec-overview" class="panel active">
+        <div class="kpi-grid">
+          <div class="kpi-card"><span>Total Shipments</span><h3 id="kpi-total">0</h3></div>
+          <div class="kpi-card info"><span>In-Transit</span><h3 id="kpi-transit">0</h3></div>
+          <div class="kpi-card success"><span>Delivered</span><h3 id="kpi-delivered">0</h3></div>
+          <div class="kpi-card"><span>Active Vehicles</span><h3 id="kpi-vehicles">0</h3></div>
+          <div class="kpi-card danger"><span>Open Alerts</span><h3 id="kpi-alerts">0</h3></div>
+          <div class="kpi-card warning"><span>Live Container Temp</span><h3 id="kpi-temp">-- &deg;C</h3></div>
+        </div>
+        <div class="two-col">
+          <div class="card">
+            <h3>Live Digital Twin Telemetry Stream</h3>
+            <canvas id="overviewTempChart" height="140"></canvas>
+          </div>
+          <div class="card">
+            <h3>Fog Computing &amp; Twin Health</h3>
+            <div id="overview-nodes-box"></div>
+            <h4 style="margin-top:16px;">Recent Critical Alerts</h4>
+            <div id="overview-alerts-box"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="sec-shipments" class="panel">
+        {% if user.role != 'faculty' %}
+        <div class="card">
+          <h3>Create New Medicine Shipment</h3>
+          <form id="shipment-form" class="form-grid">
+            <input type="text" id="sh-id" placeholder="Tracking ID (e.g., SLX-1004)" required />
+            <input type="text" id="sh-med" placeholder="Medicine Name (e.g., Rabies Vaccine)" required />
+            <input type="text" id="sh-batch" placeholder="Batch No (e.g., BATCH-88)" required />
+            <input type="text" id="sh-origin" placeholder="Origin Hub (e.g., Jigani Pharma Park)" required />
+            <input type="number" step="0.0001" id="sh-olat" value="12.7850" placeholder="Origin Lat" required />
+            <input type="number" step="0.0001" id="sh-olng" value="77.6410" placeholder="Origin Lng" required />
+            <input type="text" id="sh-dest" placeholder="Destination Hospital (e.g., Fortis Cunningham)" required />
+            <input type="number" step="0.0001" id="sh-dlat" value="12.9880" placeholder="Dest Lat" required />
+            <input type="number" step="0.0001" id="sh-dlng" value="77.5950" placeholder="Dest Lng" required />
+            <select id="sh-veh"></select>
+            <select id="sh-status">
+              <option value="In-Transit">In-Transit</option>
+              <option value="Delayed">Delayed</option>
+              <option value="Delivered">Delivered</option>
+            </select>
+            <button type="submit" class="btn-primary">Add Shipment</button>
+          </form>
+        </div>
+        {% endif %}
+        <div class="card">
+          <h3>All Medicine Shipments</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tracking ID</th><th>Medicine</th><th>Batch</th><th>Route</th>
+                  <th>SLA Range</th><th>Vehicle</th><th>Status</th><th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="shipments-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="sec-twin" class="panel">
+        <div class="kpi-grid">
+          <div class="kpi-card success"><span>Twin Connection</span><h3 id="twin-status">Online</h3></div>
+          <div class="kpi-card info"><span>Hardware Model</span><h3 style="font-size:1.1rem;">ESP32 + DHT22</h3></div>
+          <div class="kpi-card warning"><span>Twin Temperature</span><h3 id="twin-temp">-- &deg;C</h3></div>
+          <div class="kpi-card"><span>Twin Humidity</span><h3 id="twin-hum">-- %</h3></div>
+        </div>
+        <div class="card">
+          <h3>Historical Digital Twin Sensor Graph (Temperature &amp; Humidity)</h3>
+          <canvas id="twinHistoryChart" height="110"></canvas>
+        </div>
+      </section>
+
+      <section id="sec-fog" class="panel">
+        <div class="card">
+          <h3>Distributed Edge-Fog Processing &amp; Automatic Failover</h3>
+          <p class="muted">Fog Node 1 (Port 5001) handles primary threshold filtering. If Node 1 terminates, Fog Node 2 (Port 5002) detects heartbeat loss within 3s and takes over automatically.</p>
+          <div id="fog-cards-grid" class="two-col" style="margin-top:16px;"></div>
+        </div>
+      </section>
+
+      <section id="sec-coldchain" class="panel">
+        <div class="card">
+          <h3>Cold-Chain Compliance Log (WHO 2.0&deg;C &ndash; 8.0&deg;C / 30% &ndash; 65% RH)</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Time</th><th>Twin ID</th><th>Shipment</th><th>Temp (&deg;C)</th>
+                  <th>Humidity (%)</th><th>Processed By</th><th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="readings-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="sec-vehicles" class="panel">
+        {% if user.role != 'faculty' %}
+        <div class="card">
+          <h3>Register Refrigerated Vehicle</h3>
+          <form id="vehicle-form" class="form-grid">
+            <input type="text" id="v-code" placeholder="Vehicle Plate (e.g., KA-04-MD-9901)" required />
+            <input type="text" id="v-driver" placeholder="Driver Name" required />
+            <input type="text" id="v-type" value="Refrigerated Reefer Van" required />
+            <select id="v-status">
+              <option value="Available">Available</option>
+              <option value="In-Transit">In-Transit</option>
+            </select>
+            <button type="submit" class="btn-primary">Register Vehicle</button>
+          </form>
+        </div>
+        {% endif %}
+        <div class="card">
+          <h3>Fleet Status</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Vehicle Code</th><th>Driver</th><th>Type</th><th>Status</th><th>GPS Coordinates</th></tr>
+              </thead>
+              <tbody id="vehicles-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="sec-routes" class="panel">
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+            <div>
+              <h3>Nearest-Neighbor Cold-Chain Route Optimization</h3>
+              <p class="muted" id="route-summary">Calculating optimal delivery sequence...</p>
+            </div>
+            <button class="btn-primary" onclick="loadOptimizedRoute()">Recalculate Optimal Route</button>
+          </div>
+          <div id="route-map" style="height:380px;border-radius:10px;margin-top:14px;"></div>
+          <ol id="route-steps" class="route-list"></ol>
+        </div>
+      </section>
+
+      <section id="sec-alerts" class="panel">
+        <div class="card">
+          <h3>Cold-Chain &amp; Fog Infrastructure Alerts</h3>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Time</th><th>Type</th><th>Severity</th><th>Target</th><th>Message</th><th>Action</th></tr>
+              </thead>
+              <tbody id="alerts-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section id="sec-analytics" class="panel">
+        <div class="two-col">
+          <div class="card">
+            <h3>Shipment Delivery Performance</h3>
+            <canvas id="shipmentPieChart" height="160"></canvas>
+          </div>
+          <div class="card">
+            <h3>Fog Node Workload Distribution</h3>
+            <canvas id="fogBarChart" height="160"></canvas>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="/static/js/dashboard.js"></script>
+</body>
+</html>
