@@ -206,3 +206,61 @@ async function resolveAlert(id) {
 }
 fetchDashboardData();
 setInterval(fetchDashboardData, 4000);
+
+async function sendBenchTwinReading() {
+  const t = parseFloat(document.getElementById("bt-temp-input").value);
+  const h = parseFloat(document.getElementById("bt-hum-input").value || "50");
+  if (isNaN(t)) { alert("Enter a valid temperature from BenchTwin!"); return; }
+  await fetch("/api/fog/ingest", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      twin_id: "BT-ESP32-CONT-01",
+      tracking_id: "SLX-1001",
+      temperature: t,
+      humidity: h,
+      processed_by_node: "FOG-NODE-1",
+      source_mode: "BenchTwin-ESP32-Live",
+      is_anomaly: (t > 8.0 || t < 2.0),
+      alerts: t > 8.0 ? [{ type: "Temperature Breach (High)", severity: "Critical", message: `CRITICAL HEAT EXCURSION on SLX-1001: ${t}°C exceeds 8.0°C limit!` }] : (t < 2.0 ? [{ type: "Temperature Breach (Freeze)", severity: "Critical", message: `CRITICAL FREEZE RISK on SLX-1001: ${t}°C dropped below 2.0°C!` }] : [])
+    })
+  });
+  fetchDashboardData();
+}
+
+let twinPushTimer = null;
+function onTwinSliderMove() {
+  const t = parseFloat(document.getElementById("bt-temp-slider").value);
+  const h = parseFloat(document.getElementById("bt-hum-slider").value);
+  document.getElementById("bt-temp-val").innerText = `${t.toFixed(1)} °C`;
+  document.getElementById("bt-hum-val").innerText = `${h.toFixed(0)} %`;
+  clearTimeout(twinPushTimer);
+  twinPushTimer = setTimeout(() => pushTwinSliderPacket(), 350);
+}
+
+async function pushTwinSliderPacket() {
+  const slider = document.getElementById("bt-temp-slider");
+  if (!slider) return;
+  const t = parseFloat(slider.value);
+  const h = parseFloat(document.getElementById("bt-hum-slider").value);
+  await fetch("/api/fog/ingest", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      twin_id: "BT-ESP32-CONT-01",
+      tracking_id: "SLX-1001",
+      temperature: t,
+      humidity: h,
+      processed_by_node: "FOG-NODE-1",
+      source_mode: "BenchTwin-ESP32-Live",
+      is_anomaly: (t > 8.0 || t < 2.0),
+      alerts: t > 8.0 ? [{ type: "Temperature Breach (High)", severity: "Critical", message: `CRITICAL HEAT EXCURSION on SLX-1001: ${t.toFixed(1)}°C exceeds 8.0°C!` }] : (t < 2.0 ? [{ type: "Temperature Breach (Freeze)", severity: "Critical", message: `CRITICAL FREEZE RISK on SLX-1001: ${t.toFixed(1)}°C below 2.0°C!` }] : [])
+    })
+  });
+  fetchDashboardData();
+}
+
+setInterval(() => {
+  const auto = document.getElementById("bt-auto-stream");
+  if (auto && auto.checked) pushTwinSliderPacket();
+}, 3000);

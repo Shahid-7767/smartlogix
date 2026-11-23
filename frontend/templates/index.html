@@ -112,6 +112,38 @@
       </section>
 
       <section id="sec-twin" class="panel">
+        <div class="card" style="margin-bottom:16px; border-left:4px solid #38bdf8;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+            <div>
+              <h3>BenchTwin Virtual ESP32 + DHT22 Live Sensor Control</h3>
+              <p class="muted">Move the sliders below to simulate live hardware readings streaming automatically to Fog Node 1:</p>
+            </div>
+            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:600;">
+              <input type="checkbox" id="bt-auto-stream" checked> Auto-Stream Every 3s
+            </label>
+          </div>
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:16px; margin-top:14px;">
+            <div>
+              <label>DHT22 Temperature: <strong id="bt-temp-val" style="color:#38bdf8;">4.6 °C</strong></label>
+              <input type="range" id="bt-temp-slider" min="-2" max="18" step="0.1" value="4.6" style="width:100%; margin-top:6px;" oninput="onTwinSliderMove()">
+              <small class="muted">Safe WHO Cold-Chain SLA: 2.0°C – 8.0°C</small>
+            </div>
+            <div>
+              <label>DHT22 Humidity: <strong id="bt-hum-val" style="color:#22c55e;">48 %</strong></label>
+              <input type="range" id="bt-hum-slider" min="20" max="90" step="1" value="48" style="width:100%; margin-top:6px;" oninput="onTwinSliderMove()">
+              <small class="muted">Safe Relative Humidity: 30% – 65%</small>
+            </div>
+          </div>
+        </div>
+        <div class="card" style="margin-bottom:16px; border-left:4px solid #38bdf8;">
+          <h3>Live BenchTwin ESP32 Telemetry Sync</h3>
+          <p class="muted" style="margin-bottom:10px;">Enter the current DHT22 values from your BenchTwin circuit to stream through Fog Node 1 &rarr; Cloud:</p>
+          <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+            <input type="number" step="0.1" id="bt-temp-input" placeholder="Temp (°C) e.g. 12.5" style="padding:8px; border-radius:6px; border:1px solid #334155; background:#0f172a; color:#fff;">
+            <input type="number" step="0.1" id="bt-hum-input" placeholder="Humidity (%) e.g. 68" style="padding:8px; border-radius:6px; border:1px solid #334155; background:#0f172a; color:#fff;">
+            <button class="btn-sm btn-ok" style="padding:9px 16px;" onclick="sendBenchTwinReading()">Send BenchTwin Reading</button>
+          </div>
+        </div>
         <div class="kpi-grid">
           <div class="kpi-card success"><span>Twin Connection</span><h3 id="twin-status">Online</h3></div>
           <div class="kpi-card info"><span>Hardware Model</span><h3 style="font-size:1.1rem;">ESP32 + DHT22</h3></div>
@@ -223,3 +255,5 @@
   <script src="/static/js/dashboard.js"></script>
 </body>
 </html>
+
+
